@@ -23,29 +23,44 @@ public class MainActivity extends AppCompatActivity {
 
     SharedPreferences shared;
     SharedPreferences.Editor spEditor;
+
     final int itemRequestCode = 500;
     final int inventoryRequestCode = 501;
 
     ListView itemList;
     ListView inventoryList;
 
+    String spCount = "itemCount";
+    String spItemPrefix = "item_";
+    String spItemCPrefix = "itemInv_";
     ArrayList<GymItem> items;
+    ItemAdapter itemAdapter;
+    InventoryAdapter inventoryAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         items = new ArrayList<>();
-        items.add(new GymItem("", "Dumbbells", 4));
-        items.add(new GymItem("", "Treadmills", 0));
-        items.add(new GymItem("", "Medicine balls", 3));
+
+        shared = getSharedPreferences("com.example.GymInventory", Context.MODE_PRIVATE);
+        spEditor = shared.edit();
+
+        int size = shared.getInt(spCount, 0);
+        for(int i = 0; i < size; i++) {
+            items.add(new GymItem(
+                    "",
+                    shared.getString(spItemPrefix + i, ""),
+                    shared.getInt(spItemCPrefix + i, 0)));
+        }
+
         items.add(new GymItem("", "Add new item"));
 
         itemList = findViewById(R.id.item_list_view);
         inventoryList = findViewById(R.id.inventory_list_view);
 
-        ItemAdapter itemAdapter = new ItemAdapter(this, R.layout.gym_item_entry, items);
-        InventoryAdapter inventoryAdapter = new InventoryAdapter(this, R.layout.gym_item_entry, items);
+        itemAdapter = new ItemAdapter(this, R.layout.gym_item_entry, items);
+        inventoryAdapter = new InventoryAdapter(this, R.layout.gym_item_entry, items);
 
         itemList.setAdapter(itemAdapter);
         inventoryList.setAdapter(inventoryAdapter);
@@ -53,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         itemList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent start = new Intent(parent.getContext(), MainActivity.class);
+                Intent start;
                 String item = items.get(position).itemName;
                 if(item.equals("Add new item")) {
                     start = new Intent(parent.getContext(), ItemEntryActivity.class);
@@ -69,6 +84,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        for(int i = 0; i < items.size() - 1; i++) {
+            spEditor.putString(spItemPrefix + i, items.get(i).itemName);
+            spEditor.putInt(spItemCPrefix + i, items.get(i).itemCount);
+        }
+        spEditor.putInt(spCount, items.size() - 1);
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -76,8 +101,14 @@ public class MainActivity extends AppCompatActivity {
             if (requestCode == itemRequestCode) {
                 String item = data.getStringExtra("item");
                 GymItem newItem = new GymItem("", item);
-                items.add(items.size() - 2, newItem);
-
+                items.add(items.size() - 1, newItem);
+                itemAdapter.notifyDataSetChanged();
+            }
+            else if(requestCode == inventoryRequestCode) {
+                int pos = data.getIntExtra("itemPosReturned", 0);
+                int count = data.getIntExtra("inventory", 0);
+                items.get(pos).itemCount += count;
+                inventoryAdapter.notifyDataSetChanged();
             }
         }
 
