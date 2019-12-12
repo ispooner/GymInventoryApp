@@ -4,12 +4,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -27,11 +29,13 @@ public class MainActivity extends AppCompatActivity {
     ListView itemList;
     ListView inventoryList;
 
+    ArrayList<GymItem> items;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        ArrayList<GymItem> items = new ArrayList<>();
+        items = new ArrayList<>();
         items.add(new GymItem("", "Dumbbells", 4));
         items.add(new GymItem("", "Treadmills", 0));
         items.add(new GymItem("", "Medicine balls", 3));
@@ -46,14 +50,36 @@ public class MainActivity extends AppCompatActivity {
         itemList.setAdapter(itemAdapter);
         inventoryList.setAdapter(inventoryAdapter);
 
+        itemList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent start = new Intent(parent.getContext(), MainActivity.class);
+                String item = items.get(position).itemName;
+                if(item.equals("Add new item")) {
+                    start = new Intent(parent.getContext(), ItemEntryActivity.class);
+                    startActivityForResult(start, itemRequestCode);
+                }
+                else {
+                    start = new Intent(parent.getContext(), InventoryEntryActivity.class);
+                    start.putExtra("itemPosReceived", position);
+                    startActivityForResult(start, inventoryRequestCode);
+                }
+            }
+        });
     }
-
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        if(resultCode == RESULT_OK) {
+            if (requestCode == itemRequestCode) {
+                String item = data.getStringExtra("item");
+                GymItem newItem = new GymItem("", item);
+                items.add(items.size() - 2, newItem);
+
+            }
+        }
 
     }
 }
@@ -97,7 +123,7 @@ class InventoryAdapter extends ArrayAdapter<GymItem> {
         GymItem item = this.getItem(position);
         text.setText(item.itemName + ": " + item.itemCount);
         if(item.itemName.equals("Add new item")) {
-            convertView.setVisibility(View.INVISIBLE);
+            convertView.setVisibility(View.GONE);
         }
         return convertView;
     }

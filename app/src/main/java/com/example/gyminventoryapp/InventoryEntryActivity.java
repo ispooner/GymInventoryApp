@@ -19,6 +19,7 @@ public class InventoryEntryActivity extends AppCompatActivity {
     public void onInventorySubmitted(View v) {
         EditText itemEntry = findViewById(R.id.inventory_item_edit);
         String item = itemEntry.getText().toString().trim();
+        int itemPos = getIntent().getIntExtra("itemPosReceived", 0);
         if(item.isEmpty())
             return; //do nothing
         Integer count = 0;
@@ -32,6 +33,7 @@ public class InventoryEntryActivity extends AppCompatActivity {
         }
         Intent result = new Intent();
         result.putExtra("inventory", count);
+        result.putExtra("itemPosReturned", itemPos);
         setResult(RESULT_OK, result);
         finish();
     }
