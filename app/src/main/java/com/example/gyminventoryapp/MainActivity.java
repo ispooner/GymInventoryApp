@@ -158,4 +158,9 @@ class InventoryAdapter extends ArrayAdapter<GymItem> {
         }
         return convertView;
     }
+
+    @Override
+    public int getCount() {
+        return super.getCount() - 1;
+    }
 }
